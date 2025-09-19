@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+
+# bash_cmd='dpkg --add-architecture i386 && apt update &>/dev/null && apt download libgcc-13-dev:i386 &> /dev/null && dpkg-deb -c libgcc-13-dev*'
+function bash_cmd_1() {
+    arch="$1"
+    package="$2"
+    echo "dpkg --add-architecture $arch && apt update &>/dev/null && apt download $package:$arch &> /dev/null && dpkg-deb -c ${package}*"
+}
+# docker_cmd="docker run --rm --platform linux/amd64 ubuntu:25.04 bash -c \"$(bash_cmd i386 libgcc-13-dev)\""
+
+function bash_cmd_2() {
+    package="$1"
+    echo "apt update &>/dev/null && apt download $package &> /dev/null && dpkg-deb -c ${package}*"
+}
+
+archs=(
+    i386
+    amd64
+    arm64
+    armhf
+    ppc64el
+    ppc64le
+    s390x
+    riscv64
+)
+
+function list_contents_1() {
+    arch="$1"
+    package="$2"
+    contents=$(docker run --quiet -t --rm --platform "linux/amd64" ubuntu:25.04 bash -c "$(bash_cmd_1 "$arch" "$package")" | sponge)
+    echo "$contents" | awk '{for(i=6;i<=NF;i++) printf $i " ";}' | sed -e 's/ *$//g' -e 's/ *\.\//\//g' | sort -u
+}
+
+function list_contents_2() {
+    arch="$1"
+    package="$2"
+    contents=$(docker run --quiet -t --rm --platform "linux/$arch" ubuntu:25.04 bash -c "$(bash_cmd_2 "$package")" | sponge)
+    echo "$contents" | awk '{for(i=6;i<=NF;i++) printf $i " ";}' | sed -e 's/ *$//g' -e 's/ *\.\//\//g' | sort -u | grep -v '/$'
+}
+
+function main() {
+    package="$1"
+    if [[ -z "$package" ]]; then
+        echo "Usage: $0 <package-name>"
+        exit 1
+    fi
+    # list_contents i386 libgcc-13-dev
+    for arch in "${archs[@]}"; do
+        echo "Listing contents for $package on $arch"
+        list_contents_1 "$arch" "$package" > "${package}-${arch}-1.txt"
+        list_contents_2 "$arch" "$package" > "${package}-${arch}-2.txt"
+    done
+}
+
+main "$@"
