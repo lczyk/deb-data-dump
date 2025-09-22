@@ -1,0 +1,68 @@
+/usr/include/s390x-linux-gnu/bits/stab.def
+/usr/lib/s390x-linux-gnu/
+Mcrt1.o
+/usr/lib/s390x-linux-gnu/
+Scrt1.o
+/usr/lib/s390x-linux-gnu/
+audit/sotruss-lib.so
+/usr/lib/s390x-linux-gnu/
+crt1.o
+/usr/lib/s390x-linux-gnu/
+crti.o
+/usr/lib/s390x-linux-gnu/
+crtn.o
+/usr/lib/s390x-linux-gnu/
+gcrt1.o
+/usr/lib/s390x-linux-gnu/
+grcrt1.o
+/usr/lib/s390x-linux-gnu/
+libBrokenLocale.a
+/usr/lib/s390x-linux-gnu/
+libanl.a
+/usr/lib/s390x-linux-gnu/
+libc.a
+/usr/lib/s390x-linux-gnu/
+libc.so
+/usr/lib/s390x-linux-gnu/
+libc_nonshared.a
+/usr/lib/s390x-linux-gnu/
+libdl.a
+/usr/lib/s390x-linux-gnu/
+libg.a
+/usr/lib/s390x-linux-gnu/
+libm.a
+/usr/lib/s390x-linux-gnu/
+libmcheck.a
+/usr/lib/s390x-linux-gnu/
+libpthread.a
+/usr/lib/s390x-linux-gnu/
+libpthread_nonshared.a
+/usr/lib/s390x-linux-gnu/
+libresolv.a
+/usr/lib/s390x-linux-gnu/
+librt.a
+/usr/lib/s390x-linux-gnu/
+libutil.a
+/usr/lib/s390x-linux-gnu/
+rcrt1.o
+/usr/share/doc/libc6-dev/NEWS.Debian.gz
+/usr/share/doc/libc6-dev/copyright
+/usr/share/gdb/auto-load/lib/s390x-linux-gnu/libc.so.6-gdb.py
+/usr/share/lintian/overrides/libc6-dev
+/usr/lib/s390x-linux-gnu/
+libBrokenLocale.so -> libBrokenLocale.so.1
+/usr/lib/s390x-linux-gnu/
+libanl.so -> libanl.so.1
+/usr/lib/s390x-linux-gnu/
+libc_malloc_debug.so -> libc_malloc_debug.so.0
+/usr/lib/s390x-linux-gnu/
+libm.so -> libm.so.6
+/usr/lib/s390x-linux-gnu/
+libnss_compat.so -> libnss_compat.so.2
+/usr/lib/s390x-linux-gnu/
+libnss_hesiod.so -> libnss_hesiod.so.2
+/usr/lib/s390x-linux-gnu/
+libresolv.so -> libresolv.so.2
+/usr/lib/s390x-linux-gnu/
+libthread_db.so -> libthread_db.so.1
+/usr/share/doc/libc6-dev/changelog.Debian.gz -> ../libc6/changelog.Debian.gz

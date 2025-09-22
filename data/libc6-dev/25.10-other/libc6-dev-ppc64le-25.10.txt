@@ -1,0 +1,64 @@
+/usr/include/powerpc64le-linux-gnu/bits/stab.def
+/usr/lib/powerpc64le-linux-gnu/
+Mcrt1.o
+/usr/lib/powerpc64le-linux-gnu/
+Scrt1.o
+/usr/lib/powerpc64le-linux-gnu/
+audit/sotruss-lib.so
+/usr/lib/powerpc64le-linux-gnu/
+crt1.o
+/usr/lib/powerpc64le-linux-gnu/
+crti.o
+/usr/lib/powerpc64le-linux-gnu/
+crtn.o
+/usr/lib/powerpc64le-linux-gnu/
+gcrt1.o
+/usr/lib/powerpc64le-linux-gnu/
+libBrokenLocale.a
+/usr/lib/powerpc64le-linux-gnu/
+libanl.a
+/usr/lib/powerpc64le-linux-gnu/
+libc.a
+/usr/lib/powerpc64le-linux-gnu/
+libc.so
+/usr/lib/powerpc64le-linux-gnu/
+libc_nonshared.a
+/usr/lib/powerpc64le-linux-gnu/
+libdl.a
+/usr/lib/powerpc64le-linux-gnu/
+libg.a
+/usr/lib/powerpc64le-linux-gnu/
+libm.a
+/usr/lib/powerpc64le-linux-gnu/
+libmcheck.a
+/usr/lib/powerpc64le-linux-gnu/
+libpthread.a
+/usr/lib/powerpc64le-linux-gnu/
+libpthread_nonshared.a
+/usr/lib/powerpc64le-linux-gnu/
+libresolv.a
+/usr/lib/powerpc64le-linux-gnu/
+librt.a
+/usr/lib/powerpc64le-linux-gnu/
+libutil.a
+/usr/share/doc/libc6-dev/NEWS.Debian.gz
+/usr/share/doc/libc6-dev/copyright
+/usr/share/gdb/auto-load/lib/powerpc64le-linux-gnu/libc.so.6-gdb.py
+/usr/share/lintian/overrides/libc6-dev
+/usr/lib/powerpc64le-linux-gnu/
+libBrokenLocale.so -> libBrokenLocale.so.1
+/usr/lib/powerpc64le-linux-gnu/
+libanl.so -> libanl.so.1
+/usr/lib/powerpc64le-linux-gnu/
+libc_malloc_debug.so -> libc_malloc_debug.so.0
+/usr/lib/powerpc64le-linux-gnu/
+libm.so -> libm.so.6
+/usr/lib/powerpc64le-linux-gnu/
+libnss_compat.so -> libnss_compat.so.2
+/usr/lib/powerpc64le-linux-gnu/
+libnss_hesiod.so -> libnss_hesiod.so.2
+/usr/lib/powerpc64le-linux-gnu/
+libresolv.so -> libresolv.so.2
+/usr/lib/powerpc64le-linux-gnu/
+libthread_db.so -> libthread_db.so.1
+/usr/share/doc/libc6-dev/changelog.Debian.gz -> ../libc6/changelog.Debian.gz
