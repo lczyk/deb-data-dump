@@ -1,0 +1,67 @@
+/riscv64-linux-gnu/14/
+crtbegin.o
+/riscv64-linux-gnu/14/
+crtbeginS.o
+/riscv64-linux-gnu/14/
+crtbeginT.o
+/riscv64-linux-gnu/14/
+crtend.o
+/riscv64-linux-gnu/14/
+crtendS.o
+/riscv64-linux-gnu/14/
+crti.o
+/riscv64-linux-gnu/14/
+crtn.o
+/riscv64-linux-gnu/14/
+include/
+/riscv64-linux-gnu/14/
+include/sanitizer/
+/riscv64-linux-gnu/14/
+libasan.a
+/riscv64-linux-gnu/14/
+libasan_preinit.o
+/riscv64-linux-gnu/14/
+libatomic.a
+/riscv64-linux-gnu/14/
+libbacktrace.a
+/riscv64-linux-gnu/14/
+libgcc.a
+/riscv64-linux-gnu/14/
+libgcc_eh.a
+/riscv64-linux-gnu/14/
+libgcc_s.so
+/riscv64-linux-gnu/14/
+libgcov.a
+/riscv64-linux-gnu/14/
+libgomp.a
+/riscv64-linux-gnu/14/
+libitm.a
+/riscv64-linux-gnu/14/
+liblsan.a
+/riscv64-linux-gnu/14/
+liblsan_preinit.o
+/riscv64-linux-gnu/14/
+libssp_nonshared.a
+/riscv64-linux-gnu/14/
+libtsan.a
+/riscv64-linux-gnu/14/
+libtsan_preinit.o
+/riscv64-linux-gnu/14/
+libubsan.a
+/usr/share/
+/usr/share/doc/
+/riscv64-linux-gnu/14/
+libasan.so -> ./././riscv64-linux-gnu/libasan.so.8
+/riscv64-linux-gnu/14/
+libatomic.so -> ./././riscv64-linux-gnu/libatomic.so.1
+/riscv64-linux-gnu/14/
+libgomp.so -> ./././riscv64-linux-gnu/libgomp.so.1
+/riscv64-linux-gnu/14/
+libitm.so -> ./././riscv64-linux-gnu/libitm.so.1
+/riscv64-linux-gnu/14/
+liblsan.so -> ./././riscv64-linux-gnu/liblsan.so.0
+/riscv64-linux-gnu/14/
+libtsan.so -> ./././riscv64-linux-gnu/libtsan.so.2
+/riscv64-linux-gnu/14/
+libubsan.so -> ./././riscv64-linux-gnu/libubsan.so.1
+/usr/share/doc/libgcc-14-dev -> gcc-14-base

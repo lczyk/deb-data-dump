@@ -1,0 +1,63 @@
+/i686-linux-gnu/14/
+crtbegin.o
+/i686-linux-gnu/14/
+crtbeginS.o
+/i686-linux-gnu/14/
+crtbeginT.o
+/i686-linux-gnu/14/
+crtend.o
+/i686-linux-gnu/14/
+crtendS.o
+/i686-linux-gnu/14/
+crtfastmath.o
+/i686-linux-gnu/14/
+crtprec32.o
+/i686-linux-gnu/14/
+crtprec64.o
+/i686-linux-gnu/14/
+crtprec80.o
+/i686-linux-gnu/14/
+include/
+/i686-linux-gnu/14/
+include/sanitizer/
+/i686-linux-gnu/14/
+libasan.a
+/i686-linux-gnu/14/
+libasan_preinit.o
+/i686-linux-gnu/14/
+libatomic.a
+/i686-linux-gnu/14/
+libbacktrace.a
+/i686-linux-gnu/14/
+libgcc.a
+/i686-linux-gnu/14/
+libgcc_eh.a
+/i686-linux-gnu/14/
+libgcc_s.so
+/i686-linux-gnu/14/
+libgcov.a
+/i686-linux-gnu/14/
+libgomp.a
+/i686-linux-gnu/14/
+libitm.a
+/i686-linux-gnu/14/
+libquadmath.a
+/i686-linux-gnu/14/
+libssp_nonshared.a
+/i686-linux-gnu/14/
+libubsan.a
+/usr/share/
+/usr/share/doc/
+/i686-linux-gnu/14/
+libasan.so -> ./././i386-linux-gnu/libasan.so.8
+/i686-linux-gnu/14/
+libatomic.so -> ./././i386-linux-gnu/libatomic.so.1
+/i686-linux-gnu/14/
+libgomp.so -> ./././i386-linux-gnu/libgomp.so.1
+/i686-linux-gnu/14/
+libitm.so -> ./././i386-linux-gnu/libitm.so.1
+/i686-linux-gnu/14/
+libquadmath.so -> ./././i386-linux-gnu/libquadmath.so.0
+/i686-linux-gnu/14/
+libubsan.so -> ./././i386-linux-gnu/libubsan.so.1
+/usr/share/doc/libgcc-14-dev -> gcc-14-base

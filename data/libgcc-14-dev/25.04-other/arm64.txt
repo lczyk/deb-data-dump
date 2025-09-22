@@ -1,0 +1,77 @@
+/aarch64-linux-gnu/14/
+crtbegin.o
+/aarch64-linux-gnu/14/
+crtbeginS.o
+/aarch64-linux-gnu/14/
+crtbeginT.o
+/aarch64-linux-gnu/14/
+crtend.o
+/aarch64-linux-gnu/14/
+crtendS.o
+/aarch64-linux-gnu/14/
+crtfastmath.o
+/aarch64-linux-gnu/14/
+crtoffloadbegin.o
+/aarch64-linux-gnu/14/
+crtoffloadend.o
+/aarch64-linux-gnu/14/
+crtoffloadtable.o
+/aarch64-linux-gnu/14/
+crtoffloadtableS.o
+/aarch64-linux-gnu/14/
+include/
+/aarch64-linux-gnu/14/
+include/sanitizer/
+/aarch64-linux-gnu/14/
+libasan.a
+/aarch64-linux-gnu/14/
+libasan_preinit.o
+/aarch64-linux-gnu/14/
+libatomic.a
+/aarch64-linux-gnu/14/
+libbacktrace.a
+/aarch64-linux-gnu/14/
+libgcc.a
+/aarch64-linux-gnu/14/
+libgcc_eh.a
+/aarch64-linux-gnu/14/
+libgcc_s.so
+/aarch64-linux-gnu/14/
+libgcov.a
+/aarch64-linux-gnu/14/
+libgomp.a
+/aarch64-linux-gnu/14/
+libhwasan.a
+/aarch64-linux-gnu/14/
+libitm.a
+/aarch64-linux-gnu/14/
+liblsan.a
+/aarch64-linux-gnu/14/
+liblsan_preinit.o
+/aarch64-linux-gnu/14/
+libssp_nonshared.a
+/aarch64-linux-gnu/14/
+libtsan.a
+/aarch64-linux-gnu/14/
+libtsan_preinit.o
+/aarch64-linux-gnu/14/
+libubsan.a
+/usr/share/
+/usr/share/doc/
+/aarch64-linux-gnu/14/
+libasan.so -> ./././aarch64-linux-gnu/libasan.so.8
+/aarch64-linux-gnu/14/
+libatomic.so -> ./././aarch64-linux-gnu/libatomic.so.1
+/aarch64-linux-gnu/14/
+libgomp.so -> ./././aarch64-linux-gnu/libgomp.so.1
+/aarch64-linux-gnu/14/
+libhwasan.so -> ./././aarch64-linux-gnu/libhwasan.so.0
+/aarch64-linux-gnu/14/
+libitm.so -> ./././aarch64-linux-gnu/libitm.so.1
+/aarch64-linux-gnu/14/
+liblsan.so -> ./././aarch64-linux-gnu/liblsan.so.0
+/aarch64-linux-gnu/14/
+libtsan.so -> ./././aarch64-linux-gnu/libtsan.so.2
+/aarch64-linux-gnu/14/
+libubsan.so -> ./././aarch64-linux-gnu/libubsan.so.1
+/usr/share/doc/libgcc-14-dev -> gcc-14-base

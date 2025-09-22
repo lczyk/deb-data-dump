@@ -1,0 +1,83 @@
+/powerpc64le-linux-gnu/14/
+crtbegin.o
+/powerpc64le-linux-gnu/14/
+crtbeginS.o
+/powerpc64le-linux-gnu/14/
+crtbeginT.o
+/powerpc64le-linux-gnu/14/
+crtend.o
+/powerpc64le-linux-gnu/14/
+crtendS.o
+/powerpc64le-linux-gnu/14/
+crtoffloadbegin.o
+/powerpc64le-linux-gnu/14/
+crtoffloadend.o
+/powerpc64le-linux-gnu/14/
+crtoffloadtable.o
+/powerpc64le-linux-gnu/14/
+crtoffloadtableS.o
+/powerpc64le-linux-gnu/14/
+ecrti.o
+/powerpc64le-linux-gnu/14/
+ecrtn.o
+/powerpc64le-linux-gnu/14/
+ncrti.o
+/powerpc64le-linux-gnu/14/
+ncrtn.o
+/powerpc64le-linux-gnu/14/
+include/
+/powerpc64le-linux-gnu/14/
+include/sanitizer/
+/powerpc64le-linux-gnu/14/
+libasan.a
+/powerpc64le-linux-gnu/14/
+libasan_preinit.o
+/powerpc64le-linux-gnu/14/
+libatomic.a
+/powerpc64le-linux-gnu/14/
+libbacktrace.a
+/powerpc64le-linux-gnu/14/
+libgcc.a
+/powerpc64le-linux-gnu/14/
+libgcc_eh.a
+/powerpc64le-linux-gnu/14/
+libgcc_s.so
+/powerpc64le-linux-gnu/14/
+libgcov.a
+/powerpc64le-linux-gnu/14/
+libgomp.a
+/powerpc64le-linux-gnu/14/
+libitm.a
+/powerpc64le-linux-gnu/14/
+liblsan.a
+/powerpc64le-linux-gnu/14/
+liblsan_preinit.o
+/powerpc64le-linux-gnu/14/
+libquadmath.a
+/powerpc64le-linux-gnu/14/
+libssp_nonshared.a
+/powerpc64le-linux-gnu/14/
+libtsan.a
+/powerpc64le-linux-gnu/14/
+libtsan_preinit.o
+/powerpc64le-linux-gnu/14/
+libubsan.a
+/usr/share/
+/usr/share/doc/
+/powerpc64le-linux-gnu/14/
+libasan.so -> ./././powerpc64le-linux-gnu/libasan.so.8
+/powerpc64le-linux-gnu/14/
+libatomic.so -> ./././powerpc64le-linux-gnu/libatomic.so.1
+/powerpc64le-linux-gnu/14/
+libgomp.so -> ./././powerpc64le-linux-gnu/libgomp.so.1
+/powerpc64le-linux-gnu/14/
+libitm.so -> ./././powerpc64le-linux-gnu/libitm.so.1
+/powerpc64le-linux-gnu/14/
+liblsan.so -> ./././powerpc64le-linux-gnu/liblsan.so.0
+/powerpc64le-linux-gnu/14/
+libquadmath.so -> ./././powerpc64le-linux-gnu/libquadmath.so.0
+/powerpc64le-linux-gnu/14/
+libtsan.so -> ./././powerpc64le-linux-gnu/libtsan.so.2
+/powerpc64le-linux-gnu/14/
+libubsan.so -> ./././powerpc64le-linux-gnu/libubsan.so.1
+/usr/share/doc/libgcc-14-dev -> gcc-14-base

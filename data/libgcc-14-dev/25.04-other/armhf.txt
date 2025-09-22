@@ -1,0 +1,49 @@
+/arm-linux-gnueabihf/14/
+crtbegin.o
+/arm-linux-gnueabihf/14/
+crtbeginS.o
+/arm-linux-gnueabihf/14/
+crtbeginT.o
+/arm-linux-gnueabihf/14/
+crtend.o
+/arm-linux-gnueabihf/14/
+crtendS.o
+/arm-linux-gnueabihf/14/
+crtfastmath.o
+/arm-linux-gnueabihf/14/
+include/
+/arm-linux-gnueabihf/14/
+include/sanitizer/
+/arm-linux-gnueabihf/14/
+libasan.a
+/arm-linux-gnueabihf/14/
+libasan_preinit.o
+/arm-linux-gnueabihf/14/
+libatomic.a
+/arm-linux-gnueabihf/14/
+libbacktrace.a
+/arm-linux-gnueabihf/14/
+libgcc.a
+/arm-linux-gnueabihf/14/
+libgcc_eh.a
+/arm-linux-gnueabihf/14/
+libgcc_s.so
+/arm-linux-gnueabihf/14/
+libgcov.a
+/arm-linux-gnueabihf/14/
+libgomp.a
+/arm-linux-gnueabihf/14/
+libssp_nonshared.a
+/arm-linux-gnueabihf/14/
+libubsan.a
+/usr/share/
+/usr/share/doc/
+/arm-linux-gnueabihf/14/
+libasan.so -> ./././arm-linux-gnueabihf/libasan.so.8
+/arm-linux-gnueabihf/14/
+libatomic.so -> ./././arm-linux-gnueabihf/libatomic.so.1
+/arm-linux-gnueabihf/14/
+libgomp.so -> ./././arm-linux-gnueabihf/libgomp.so.1
+/arm-linux-gnueabihf/14/
+libubsan.so -> ./././arm-linux-gnueabihf/libubsan.so.1
+/usr/share/doc/libgcc-14-dev -> gcc-14-base

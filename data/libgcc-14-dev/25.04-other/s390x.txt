@@ -1,0 +1,51 @@
+/s390x-linux-gnu/14/
+crtbegin.o
+/s390x-linux-gnu/14/
+crtbeginS.o
+/s390x-linux-gnu/14/
+crtbeginT.o
+/s390x-linux-gnu/14/
+crtend.o
+/s390x-linux-gnu/14/
+crtendS.o
+/s390x-linux-gnu/14/
+include/
+/s390x-linux-gnu/14/
+include/sanitizer/
+/s390x-linux-gnu/14/
+libasan.a
+/s390x-linux-gnu/14/
+libasan_preinit.o
+/s390x-linux-gnu/14/
+libatomic.a
+/s390x-linux-gnu/14/
+libbacktrace.a
+/s390x-linux-gnu/14/
+libgcc.a
+/s390x-linux-gnu/14/
+libgcc_eh.a
+/s390x-linux-gnu/14/
+libgcc_s.so
+/s390x-linux-gnu/14/
+libgcov.a
+/s390x-linux-gnu/14/
+libgomp.a
+/s390x-linux-gnu/14/
+libitm.a
+/s390x-linux-gnu/14/
+libssp_nonshared.a
+/s390x-linux-gnu/14/
+libubsan.a
+/usr/share/
+/usr/share/doc/
+/s390x-linux-gnu/14/
+libasan.so -> ./././s390x-linux-gnu/libasan.so.8
+/s390x-linux-gnu/14/
+libatomic.so -> ./././s390x-linux-gnu/libatomic.so.1
+/s390x-linux-gnu/14/
+libgomp.so -> ./././s390x-linux-gnu/libgomp.so.1
+/s390x-linux-gnu/14/
+libitm.so -> ./././s390x-linux-gnu/libitm.so.1
+/s390x-linux-gnu/14/
+libubsan.so -> ./././s390x-linux-gnu/libubsan.so.1
+/usr/share/doc/libgcc-14-dev -> gcc-14-base
