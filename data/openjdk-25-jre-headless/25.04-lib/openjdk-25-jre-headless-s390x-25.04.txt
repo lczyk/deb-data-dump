@@ -1,0 +1,186 @@
+.java-1.25.0-openjdk-s390x.jinfo
+/usr/lib/debugjava-1.25.0-openjdk-s390x -> java-25-openjdk-s390x
+bin/java
+bin/jpackage
+bin/keytool
+bin/rmiregistry
+conf/accessibility.properties -> /etc/java-25-openjdk/accessibility.properties
+conf/jaxp-strict.properties -> /etc/java-25-openjdk/jaxp-strict.properties
+conf/jaxp-strict.properties.template -> /etc/java-25-openjdk/jaxp-strict.properties.template
+conf/jaxp.properties -> /etc/java-25-openjdk/jaxp.properties
+conf/logging.properties -> /etc/java-25-openjdk/logging.properties
+conf/management/jmxremote.access -> /etc/java-25-openjdk/management/jmxremote.access
+conf/management/management.properties -> /etc/java-25-openjdk/management/management.properties
+conf/net.properties -> /etc/java-25-openjdk/net.properties
+conf/security/java.policy -> /etc/java-25-openjdk/security/java.policy
+conf/security/java.security -> /etc/java-25-openjdk/security/java.security
+conf/security/nss.cfg -> /etc/java-25-openjdk/security/nss.cfg
+conf/security/policy/README.txt -> /etc/java-25-openjdk/security/policy/README.txt
+conf/security/policy/limited/default_US_export.policy -> /etc/java-25-openjdk/security/policy/limited/default_US_export.policy
+conf/security/policy/limited/default_local.policy -> /etc/java-25-openjdk/security/policy/limited/default_local.policy
+conf/security/policy/limited/exempt_local.policy -> /etc/java-25-openjdk/security/policy/limited/exempt_local.policy
+conf/security/policy/unlimited/default_US_export.policy -> /etc/java-25-openjdk/security/policy/unlimited/default_US_export.policy
+conf/security/policy/unlimited/default_local.policy -> /etc/java-25-openjdk/security/policy/unlimited/default_local.policy
+conf/sound.properties -> /etc/java-25-openjdk/sound.properties
+conf/swing.properties -> /etc/java-25-openjdk/swing.properties
+docs -> ../../../share/doc/openjdk-25-jre-headless
+java-1.25.0-openjdk-s390x -> java-25-openjdk-s390x
+java-25-openjdk-s390x/
+legal/java.base/ASSEMBLY_EXCEPTION
+legal/java.base/aes.md
+legal/java.base/c-libutl.md
+legal/java.base/cldr.md
+legal/java.base/icu.md
+legal/java.base/public_suffix.md
+legal/java.base/siphash.md
+legal/java.base/unicode.md
+legal/java.compiler/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.datatransfer/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.desktop/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.desktop/colorimaging.md
+legal/java.desktop/mesa3d.md
+legal/java.desktop/pipewire.md
+legal/java.desktop/xwd.md
+legal/java.instrument/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.logging/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.management.rmi/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.management/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.naming/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.net.http/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.prefs/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.rmi/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.scripting/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.se/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.security.jgss/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.security.sasl/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.smartcardio/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.smartcardio/pcsclite.md
+legal/java.sql.rowset/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.sql/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.transaction.xa/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.xml.crypto/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.xml.crypto/santuario.md
+legal/java.xml/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/java.xml/bcel.md
+legal/java.xml/dom.md
+legal/java.xml/jcup.md
+legal/java.xml/schema10part1.md
+legal/java.xml/schema10part2.md
+legal/java.xml/xalan.md
+legal/java.xml/xerces.md
+legal/java.xml/xhtml10.md
+legal/java.xml/xhtml10schema.md
+legal/java.xml/xhtml11.md
+legal/java.xml/xhtml11schema.md
+legal/java.xml/xmlspec.md
+legal/java.xml/xmlxsd.md
+legal/jdk.accessibility/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.attach/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.charsets/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.compiler/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.crypto.cryptoki/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.crypto.cryptoki/pkcs11cryptotoken.md
+legal/jdk.crypto.cryptoki/pkcs11wrapper.md
+legal/jdk.crypto.ec/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.dynalink/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.dynalink/dynalink.md
+legal/jdk.editpad/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.httpserver/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.incubator.vector/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.incubator.vector/sleef.md
+legal/jdk.internal.ed/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.internal.jvmstat/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.internal.le/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.internal.le/jline.md
+legal/jdk.internal.md/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.internal.md/commonmark.md
+legal/jdk.internal.opt/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.internal.opt/jopt-simple.md
+legal/jdk.jartool/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.javadoc/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.javadoc/dejavufonts.md
+legal/jdk.javadoc/jquery.md
+legal/jdk.javadoc/jqueryUI.md
+legal/jdk.jcmd/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jconsole/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jdeps/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jdi/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jdwp.agent/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jfr/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jlink/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jpackage/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jshell/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jsobject/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.jstatd/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.localedata/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.localedata/cldr.md -> ../java.base/cldr.md
+legal/jdk.localedata/thaidict.md
+legal/jdk.management.agent/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.management.jfr/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.management/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.naming.dns/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.naming.rmi/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.net/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.nio.mapmode/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.sctp/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.security.auth/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.security.jgss/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.unsupported.desktop/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.unsupported/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.xml.dom/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+legal/jdk.zipfs/ASSEMBLY_EXCEPTION -> ../java.base/ASSEMBLY_EXCEPTION
+lib/classlist
+lib/jar.binfmt
+lib/jexec
+lib/jfr/default.jfc -> /etc/java-25-openjdk/jfr/default.jfc
+lib/jfr/profile.jfc -> /etc/java-25-openjdk/jfr/profile.jfc
+lib/jrt-fs.jar
+lib/jspawnhelper
+lib/jvm.cfg -> /etc/java-25-openjdk/jvm-s390x.cfg
+lib/jvm.cfg-default
+lib/libattach.so
+lib/libawt.so
+lib/libawt_headless.so
+lib/libdt_socket.so
+lib/libextnet.so
+lib/libfontmanager.so
+lib/libinstrument.so
+lib/libj2gss.so
+lib/libj2pcsc.so
+lib/libj2pkcs11.so
+lib/libjaas.so
+lib/libjava.so
+lib/libjavajpeg.so
+lib/libjdwp.so
+lib/libjimage.so
+lib/libjli.so
+lib/libjsig.so
+lib/libjsound.so
+lib/liblcms.so
+lib/libmanagement.so
+lib/libmanagement_agent.so
+lib/libmanagement_ext.so
+lib/libmlib_image.so
+lib/libnet.so
+lib/libnio.so
+lib/libprefs.so
+lib/librmi.so
+lib/libsctp.so
+lib/libsyslookup.so
+lib/libverify.so
+lib/libzip.so
+lib/modules
+lib/psfont.properties.ja -> /etc/java-25-openjdk/psfont.properties.ja
+lib/psfontj2d.properties -> /etc/java-25-openjdk/psfontj2d.properties
+lib/security/blocked.certs -> /etc/java-25-openjdk/security/blocked.certs
+lib/security/cacerts -> /etc/ssl/certs/java/cacerts
+lib/security/default.policy -> /etc/java-25-openjdk/security/default.policy
+lib/security/public_suffix_list.dat -> /etc/java-25-openjdk/security/public_suffix_list.dat
+lib/server/classes.jsa
+lib/server/classes_coh.jsa
+lib/server/classes_nocoops.jsa
+lib/server/classes_nocoops_coh.jsa
+lib/server/libjsig.so
+lib/server/libjvm.so
+lib/tzdb.dat
+release
