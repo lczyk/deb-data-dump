@@ -40,37 +40,81 @@ def get_files(directory):
     files = [f[1:] if f.startswith('./') else f for f in files]
     return files
 
-def download_deb(deb_dir, package, arch, suite):
+def download_deb(deb_dir, package, arch, suite, original_cwd):
     # Adjust arch for ppc64el
     download_arch = arch
     if arch == "ppc64el":
         download_arch = "ppc64le"
-    
-    os.chdir(str(deb_dir))
+
+    relative_path = deb_dir.relative_to(original_cwd)
+    work_path = f"/work/{relative_path}"
+
     if arch in ["i386", "amd64"]:
         platform = "linux/amd64"
-        cmd = ["docker", "run", "--rm", "--platform", platform, "-v", f"{Path.cwd()}:/work", "-w", "/work", f"ubuntu:{suite}", "bash", "-c", f"dpkg --add-architecture i386 && apt update && apt download {package}:{download_arch}"]
+        cmd = [
+            "docker",
+            "run",
+            "--rm",
+            "--platform",
+            platform,
+            "-v",
+            f"{original_cwd}:/work",
+            "-w",
+            work_path,
+            f"ubuntu:{suite}",
+            "bash",
+            "-c",
+            f"dpkg --add-architecture i386 && apt update && apt download {package}:{download_arch}",
+        ]
     else:
         platform = f"linux/{download_arch}"
-        cmd = ["docker", "run", "--rm", "--platform", platform, "-v", f"{Path.cwd()}:/work", "-w", "/work", f"ubuntu:{suite}", "bash", "-c", f"apt update && apt download {package}"]
-    
+        cmd = [
+            "docker",
+            "run",
+            "--rm",
+            "--platform",
+            platform,
+            "-v",
+            f"{original_cwd}:/work",
+            "-w",
+            work_path,
+            f"ubuntu:{suite}",
+            "bash",
+            "-c",
+            f"apt update && apt download {package}",
+        ]
+
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         print(f"Error downloading deb for {arch}: {result.stderr}", file=sys.stderr)
         sys.exit(1)
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Check slice coverage for a Debian package across architectures.")
-    parser.add_argument("package", help="Package name to check coverage against (e.g., libc6)")
+    parser = argparse.ArgumentParser(
+        description="Check slice coverage for a Debian package across architectures."
+    )
+    parser.add_argument(
+        "package", help="Package name to check coverage against (e.g., libc6)"
+    )
     parser.add_argument("slices", nargs="*", help="Slices to check (optional)")
-    parser.add_argument("--arch", action='append', help="Architecture to process (default: all)")
-    parser.add_argument("--ignore", action='append', default=[], help="Paths to ignore in uncovered files (e.g., ./usr/lib/)")
-    
+    parser.add_argument(
+        "--arch", action="append", help="Architecture to process (default: all)"
+    )
+    parser.add_argument(
+        "--ignore",
+        action="append",
+        default=[],
+        help="Paths to ignore in uncovered files (e.g., ./usr/lib/)",
+    )
+
     args = parser.parse_args()
-    
+
     package = args.package
     slices = args.slices
-    
+
+    original_cwd = Path.cwd()
+
     # Process ignore paths: split on commas and flatten
     ignore_paths = [path.strip() for item in args.ignore or [] for path in item.split(',') if path.strip()]
     
@@ -139,7 +183,7 @@ def main():
         
         # Download the deb
         print(f"--- Downloading .deb for {package}:{arch}...")
-        download_deb(deb_dir, package, arch, suite)
+        download_deb(deb_dir, package, arch, suite, original_cwd)
         
         # Extract deb
         print("--- Extracting .deb...")
@@ -170,14 +214,23 @@ def main():
         deb_set = set(deb_files_list)
         rootfs_set = set(rootfs_files_list)
         covered = deb_set & rootfs_set
-        uncovered = deb_set - rootfs_set
+        all_uncovered = deb_set - rootfs_set
         
         # Filter ignored paths
-        uncovered = {f for f in uncovered if not any(f.startswith(ignore) for ignore in ignore_paths)}
+        uncovered = {
+            f
+            for f in all_uncovered
+            if not any(f.startswith(ignore) for ignore in ignore_paths)
+        }
+
+        ignored = all_uncovered - uncovered
         
         covered_count = len(covered)
+        uncovered_count = len(uncovered)
+        ignored_count = len(ignored)
         total = len(deb_files_list)
-        percent = (100 * covered_count // total) if total else 0
+        effective_total = total - ignored_count
+        percent = (100 * covered_count // effective_total) if effective_total else 0
         
         # Save covered and uncovered
         with open(archdir / "covered.txt", "w") as f:
@@ -186,8 +239,13 @@ def main():
         with open(archdir / "uncovered.txt", "w") as f:
             for file in sorted(uncovered):
                 f.write(file + "\n")
-        
-        print(f"===> Coverage for {arch}: {covered_count} / {total} files ({percent}%)")
+        with open(archdir / "ignored.txt", "w") as f:
+            for file in sorted(ignored):
+                f.write(file + "\n")
+
+        print(
+            f"===> Coverage for {arch}: {covered_count} / {effective_total} files ({percent}%) [ignored: {ignored_count}]"
+        )
         print(f"===> Uncovered files for {arch}:")
         for file in sorted(uncovered):
             print(file)
