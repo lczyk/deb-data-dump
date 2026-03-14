@@ -5,6 +5,7 @@ import subprocess
 import sys
 import shutil
 import re
+import tempfile
 from pathlib import Path
 
 ARCHES = ["amd64", "i386", "arm64", "riscv64", "armhf", "ppc64el", "s390x"]
@@ -42,48 +43,49 @@ def download_deb(deb_dir, package, arch, suite, original_cwd):
     if arch == "ppc64el":
         download_arch = "ppc64le"
 
-    relative_path = deb_dir.relative_to(original_cwd)
-    work_path = f"/work/{relative_path}"
+    download_dir = original_cwd / f"deb_download_{arch}"
+    download_dir.mkdir(parents=True, exist_ok=True)
+
+    work_path = f"/work/deb_download_{arch}"
+
+    cmd = [
+        "docker",
+        "run",
+        "--rm",
+        "-v",
+        f"{original_cwd}:/work",
+        "-w",
+        work_path,
+        f"ubuntu:{suite}",
+    ]
 
     if arch in ["i386", "amd64"]:
         platform = "linux/amd64"
-        cmd = [
-            "docker",
-            "run",
-            "--rm",
-            "--platform",
-            platform,
-            "-v",
-            f"{original_cwd}:/work",
-            "-w",
-            work_path,
-            f"ubuntu:{suite}",
-            "bash",
-            "-c",
-            f"dpkg --add-architecture i386 && apt update && apt download {package}:{download_arch}",
-        ]
+        bash_cmd = f"dpkg --add-architecture i386 && apt update && apt download {package}:{download_arch}"
     else:
         platform = f"linux/{download_arch}"
-        cmd = [
-            "docker",
-            "run",
-            "--rm",
-            "--platform",
-            platform,
-            "-v",
-            f"{original_cwd}:/work",
-            "-w",
-            work_path,
-            f"ubuntu:{suite}",
-            "bash",
-            "-c",
-            f"apt update && apt download {package}",
-        ]
+        bash_cmd = f"apt update && apt download {package}"
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"Error downloading deb for {arch}: {result.stderr}", file=sys.stderr)
-        sys.exit(1)
+    cmd.extend(["--platform", platform])
+    cmd.extend(["bash", "-c", bash_cmd])
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Error downloading deb for {arch}: {result.stderr}", file=sys.stderr)
+            return None
+
+        # Move the downloaded .deb to deb_dir
+        deb_files = list(download_dir.glob("*.deb"))
+        if deb_files:
+            deb_path = deb_dir / deb_files[0].name
+            shutil.move(str(deb_files[0]), str(deb_path))
+            return deb_path
+        else:
+            return None
+    finally:
+        # Clean up download_dir
+        shutil.rmtree(download_dir, ignore_errors=True)
 
 
 def parse_args() -> argparse.Namespace:
@@ -123,8 +125,9 @@ def main(args: argparse.Namespace) -> None:
 
     # Process ignore paths: split on commas and flatten
     ignore_paths = [path.strip() for item in args.ignore or [] for path in item.split(',') if path.strip()]
-    
-    workdir = Path.cwd() / "work"
+
+    temp_dir = tempfile.mkdtemp()
+    workdir = Path(temp_dir)
     outdir = Path.cwd() / "out"
     workdir.mkdir(parents=True, exist_ok=True)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -199,19 +202,17 @@ def main(args: argparse.Namespace) -> None:
 
         # Download the deb
         print(f"--- Downloading .deb for {package}:{arch}...")
-        download_deb(deb_dir, package, arch, suite, original_cwd)
+        deb_file = download_deb(deb_dir, package, arch, suite, original_cwd)
+        if deb_file is None:
+            print(f"Failed to download deb for {arch}, skipping...", file=sys.stderr)
+            continue
         
         # Extract deb
         print("--- Extracting .deb...")
-        deb_files = list(deb_dir.glob("*.deb"))
-        if not deb_files:
-            print(f"No deb file found in {deb_dir}", file=sys.stderr)
-            sys.exit(1)
-        deb_file = deb_files[0]
         result = subprocess.run(["dpkg-deb", "-x", str(deb_file), str(deb_extract_dir)])
         if result.returncode != 0:
             print(f"Error extracting deb for {arch}", file=sys.stderr)
-            sys.exit(1)
+            continue
         
         # Compare files
         print("--- Comparing files...")
@@ -266,6 +267,10 @@ def main(args: argparse.Namespace) -> None:
         for file in sorted(uncovered):
             print(file)
         print()
+
+    # Clean up temp directory
+    shutil.rmtree(temp_dir, ignore_errors=True)
+
 
 if __name__ == "__main__":
     args = parse_args()
