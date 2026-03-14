@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-
 import argparse
 import gzip
 import io
+import logging
+import os
+import re
+import shutil
 import subprocess
 import sys
-import shutil
-import re
 import tempfile
 import urllib.request
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Literal
 
-ARCHES = ["amd64", "i386", "arm64", "riscv64", "armhf", "ppc64el", "s390x"]
+Arch = Literal["amd64", "i386", "arm64", "riscv64", "armhf", "ppc64el", "s390x"]
+ARCHES: set[Arch] = {"amd64", "i386", "arm64", "riscv64", "armhf", "ppc64el", "s390x"}
+
 
 def get_suite(chisel_release_path: Path):
     chisel_yaml = chisel_release_path / "chisel.yaml"
@@ -22,24 +26,27 @@ def get_suite(chisel_release_path: Path):
         text=True,
     )
     if result.returncode != 0:
-        print(
-            f"Error getting suite from {chisel_yaml}",
-            file=sys.stderr,
+        logging.error(
+            f"Could not get suite from {chisel_yaml}",
         )
         sys.exit(1)
     return result.stdout.strip()
 
+
 def get_slices_from_sdf(package: str, chisel_release_path: Path):
     sdf_file = chisel_release_path / "slices" / f"{package}.yaml"
     if not sdf_file.exists():
-        print(f"Error: SDF file '{sdf_file}' not found.", file=sys.stderr)
+        logging.error("SDF file not found for package '%s': %s", package, sdf_file)
         sys.exit(1)
-    result = subprocess.run(["yq", "-r", ".slices | keys[]", str(sdf_file)], capture_output=True, text=True)
+    result = subprocess.run(
+        ["yq", "-r", ".slices | keys[]", str(sdf_file)], capture_output=True, text=True
+    )
     if result.returncode != 0:
-        print("Error parsing slices", file=sys.stderr)
+        logging.error("Could not parse slices from SDF file: %s", sdf_file)
         sys.exit(1)
-    slices = result.stdout.strip().split('\n')
+    slices = result.stdout.strip().split("\n")
     return [s for s in slices if s]
+
 
 def get_files(directory):
     files = []
@@ -49,7 +56,8 @@ def get_files(directory):
     files.sort()
     return files
 
-def _arch_base_url(arch: str) -> str:
+
+def _arch_base_url(arch: Arch) -> str:
     """Return the Ubuntu mirror base URL for the given architecture."""
     if arch in ("amd64", "i386"):
         return "http://archive.ubuntu.com/ubuntu"
@@ -62,7 +70,7 @@ def _fetch_url(url: str, timeout: int = 30) -> bytes | None:
         with urllib.request.urlopen(url, timeout=timeout) as resp:
             return resp.read()
     except Exception as e:
-        print(f"Warning: could not fetch {url}: {e}", file=sys.stderr)
+        logging.warning(f"Warning: could not fetch {url}: {e}")
         return None
 
 
@@ -98,16 +106,16 @@ def _parse_packages_gz(data: bytes, package: str) -> dict[str, str] | None:
 def download_all_debs(
     workdir: Path,
     package: str,
-    arches: list[str],
+    arches: set[Arch],
     suite: str,
-) -> dict[str, Path]:
+) -> dict[Arch, Path]:
     """Download .deb files directly from Ubuntu mirrors without Docker."""
     suites_to_try = [f"{suite}-updates", f"{suite}-security", suite]
     components = ["main", "universe", "restricted", "multiverse"]
 
-    deb_dict: dict[str, Path] = {}
+    deb_dict: dict[Arch, Path] = {}
 
-    def download_for_arch(arch: str) -> tuple[str, Path | None]:
+    def download_for_arch(arch: Arch) -> tuple[Arch, Path | None]:
         base_url = _arch_base_url(arch)
         entry: dict[str, str] | None = None
 
@@ -124,39 +132,41 @@ def download_all_debs(
                     break
 
         if not entry:
-            print(
-                f"Warning: package '{package}' not found for arch '{arch}' in any suite/component.",
-                file=sys.stderr,
+            logging.warning(
+                f"Package '{package}' not found for arch '{arch}' in any suite/component."
             )
             return arch, None
 
         filename = entry.get("Filename")
         if not filename:
-            print(
-                f"Warning: no Filename field for '{package}' on arch '{arch}'.",
-                file=sys.stderr,
-            )
+            logging.warning(f"No Filename field for '{package}' on arch '{arch}'.")
             return arch, None
 
         deb_url = f"{base_url}/{filename}"
         (workdir / arch).mkdir(parents=True, exist_ok=True)
         deb_dest = workdir / arch / Path(filename).name
-        print(f"  [{arch}] Downloading {deb_url} ...")
+        logging.info("Downloading %s ...", deb_url)
         try:
             urllib.request.urlretrieve(deb_url, str(deb_dest))
-            print(f"  [{arch}] Saved to {deb_dest.name}")
+            logging.info("Saved to %s", deb_dest.name)
             return arch, deb_dest
         except Exception as e:
-            print(f"Warning: failed to download {deb_url}: {e}", file=sys.stderr)
+            logging.warning("Failed to download %s: %s", deb_url, e)
             return arch, None
 
-    max_workers = max(1, min(8, len(arches)))
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    clamp = lambda x, min_val, max_val: max(min_val, min(max_val, x))
+    executor = ThreadPoolExecutor(max_workers=clamp(len(arches), 1, 8))
+    try:
         futures = [executor.submit(download_for_arch, arch) for arch in arches]
         for future in as_completed(futures):
             arch, deb_path = future.result()
             if deb_path is not None:
                 deb_dict[arch] = deb_path
+    except KeyboardInterrupt:
+        executor.shutdown(wait=False, cancel_futures=True)
+        raise
+    else:
+        executor.shutdown()
 
     return deb_dict
 
@@ -175,8 +185,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--slice", action="append", help="Slices to check (default: all from SDF)"
     )
+
     parser.add_argument(
-        "--arch", action="append", help="Architecture to process (default: all)"
+        "--arch",
+        action="append",
+        default=[],
+        help="Architecture to process",
     )
     parser.add_argument(
         "--ignore",
@@ -195,7 +209,45 @@ def parse_args() -> argparse.Namespace:
         help="When used with --workdir, remove the existing directory before running.",
     )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    # process arches
+    processed_arch: set[Arch] = set()
+    for item in args.arch:
+        _arches = [arch.strip().lower() for arch in item.split(",")]
+        _arches = [arch for arch in _arches if arch]
+        for arch in _arches:
+            if arch == "ppc64le":
+                logging.warning(
+                    "Mapping 'ppc64le' to 'ppc64el' for compatibility with Ubuntu naming."
+                )
+                arch = "ppc64el"
+            if arch not in ARCHES and arch != "all":
+                parser.error(
+                    f"Invalid arch: {arch}. Valid options: {', '.join(ARCHES)} or 'all'"
+                )
+            if arch == "all":
+                processed_arch.update(ARCHES)
+            else:
+                processed_arch.add(arch)
+
+    if not processed_arch:
+        processed_arch.update(ARCHES)
+
+    args.arch = sorted(processed_arch)
+
+    # process ignores
+    processed_ignores: set[str] = set()
+    for item in args.ignore:
+        _paths = [path.strip() for path in item.split(",")]
+        _paths = [path for path in _paths if path]
+        processed_ignores.update(_paths)
+    args.ignore = sorted(processed_ignores)
+
+    if args.force and not args.workdir:
+        logging.warning("--force has no effect when --workdir is not specified.")
+
+    return args
 
 
 def main(args: argparse.Namespace) -> None:
@@ -203,37 +255,19 @@ def main(args: argparse.Namespace) -> None:
         ["chisel", "--version"], capture_output=True, text=True
     )
     if chisel_version.returncode != 0:
-        print("Error: chisel is not installed or not in PATH.", file=sys.stderr)
+        logging.error("chisel is not installed or not in PATH.")
         sys.exit(1)
 
-    print(f"Using chisel version: {chisel_version.stdout.strip()}")
+    logging.info("Using chisel version: %s", chisel_version.stdout.strip())
     chisel_release_path = Path(args.chisel_releases).resolve()
     if not chisel_release_path.is_dir():
-        print(
-            f"Error: chisel-releases path '{chisel_release_path}' is not a directory.",
-            file=sys.stderr,
+        logging.error(
+            "chisel-releases path '%s' is not a directory.", chisel_release_path
         )
         sys.exit(1)
     if not (chisel_release_path / "chisel.yaml").exists():
-        print(
-            f"Error: '{chisel_release_path / 'chisel.yaml'}' not found.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    package = args.package
-
-    # Process ignore paths: split on commas and flatten
-    ignore_paths = [
-        path.strip()
-        for item in args.ignore or []
-        for path in item.split(",")
-        if path.strip()
-    ]
-
-    if args.force and not args.workdir:
-        print(
-            "Error: --force can only be used together with --workdir.", file=sys.stderr
+        logging.error(
+            "chisel.yaml not found in chisel-releases path '%s'.", chisel_release_path
         )
         sys.exit(1)
 
@@ -242,19 +276,15 @@ def main(args: argparse.Namespace) -> None:
         cleanup_workdir = False
 
         if workdir.exists() and not workdir.is_dir():
-            print(
-                f"Error: workdir path '{workdir}' exists and is not a directory.",
-                file=sys.stderr,
-            )
+            logging.error("workdir path '%s' exists and is not a directory.", workdir)
             sys.exit(1)
 
         if workdir.exists() and args.force:
             shutil.rmtree(workdir, ignore_errors=True)
         elif workdir.exists() and any(workdir.iterdir()):
-            print(
-                f"Error: workdir '{workdir}' already exists and is not empty. "
-                "Use --force to overwrite it.",
-                file=sys.stderr,
+            logging.error(
+                "workdir '%s' already exists and is not empty. Use --force to overwrite it.",
+                workdir,
             )
             sys.exit(1)
     else:
@@ -263,70 +293,46 @@ def main(args: argparse.Namespace) -> None:
     workdir.mkdir(parents=True, exist_ok=True)
 
     suite = get_suite(chisel_release_path)
-    print(f"Suite: {suite}")
+    logging.info("Suite: %s", suite)
 
     # Process slice: split on commas and flatten
     if not args.slice:
-        print("--- No slices specified, parsing sdf file...")
-        slices = get_slices_from_sdf(package, chisel_release_path)
+        logging.info("No slices specified, parsing sdf file")
+        slices = get_slices_from_sdf(args.package, chisel_release_path)
     else:
         slice_list = [
             s.strip() for item in args.slice for s in item.split(",") if s.strip()
         ]
         if "all" in slice_list:
             print("Slices set to 'all', parsing sdf file...")
-            slices = get_slices_from_sdf(package, chisel_release_path)
+            slices = get_slices_from_sdf(args.package, chisel_release_path)
         else:
             slices = slice_list
 
-    # Process arch: split on commas and flatten
-    if not args.arch:
-        arches_to_process = ARCHES
-    else:
-        arch_list = [
-            arch.strip()
-            for item in args.arch
-            for arch in item.split(",")
-            if arch.strip()
-        ]
-        if "all" in arch_list:
-            arches_to_process = ARCHES
-        else:
-            arches_to_process = []
-            for arch in arch_list:
-                if arch not in ARCHES:
-                    print(
-                        f"Invalid arch: {arch}. Valid options: {', '.join(ARCHES)} or 'all'",
-                        file=sys.stderr,
-                    )
-                    sys.exit(1)
-                arches_to_process.append(arch)
-
     # Strip package_ from slices if present
-    slices = [s.replace(f"{package}_", "", 1) for s in slices]
+    slices = [s.replace(args.package + "_", "", 1) for s in slices]
 
     # Verify no underscores in slice names
     for slice in slices:
         if "_" in slice:
-            print(
-                f"Error: Slice name '{slice}' contains underscore '_'. Slice names should not contain underscores.",
-                file=sys.stderr,
+            logging.error(
+                f"Slice name '{slice}' contains underscore '_'. Slice names should not contain underscores.",
             )
             sys.exit(1)
 
-    print(f"Slices: {', '.join(slices)}")
+    logging.info("Slices: %s", ", ".join(slices))
 
     # Prepend package name
-    slices_to_cut = [f"{package}_{slice}" for slice in slices]
+    slices_to_cut = [f"{args.package}_{slice}" for slice in slices]
 
     # Download all debs
-    print(f"--- Downloading .debs for {len(arches_to_process)} architectures...")
-    print(f"Architectures: {', '.join(arches_to_process)}")
-    deb_files = download_all_debs(workdir, package, arches_to_process, suite)
+    logging.info("Downloading .debs for %d architectures...", len(args.arch))
+    logging.info("Architectures: %s", ", ".join(args.arch))
+    deb_files = download_all_debs(workdir, args.package, args.arch, suite)
 
     # Prepare directories
     arch_data = {}
-    for arch in arches_to_process:
+    for arch in args.arch:
         archdir = workdir / arch
         rootfs_dir = archdir / "rootfs"
         deb_extract_dir = archdir / "deb_extract"
@@ -343,8 +349,11 @@ def main(args: argparse.Namespace) -> None:
             "deb_extract_dir": deb_extract_dir,
         }
 
-    def run_chisel(arch, rootfs_dir, slices_to_cut):
-        print(f"--- Running chisel cut for {arch}...")
+    def run_chisel(
+        arch: str,
+        rootfs_dir: Path,
+        slices_to_cut: list[str],
+    ) -> tuple[str, set[str], int, str]:
         cmd = [
             "chisel",
             "cut",
@@ -360,40 +369,52 @@ def main(args: argparse.Namespace) -> None:
         result = subprocess.run(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
-        extracted_packages = set(
+        cut_packages = set(
             re.findall(r'Extracting files from package "([^"]+)"', result.stdout)
         )
-        return arch, extracted_packages, result.returncode, result.stdout
+        return arch, cut_packages, result.returncode, result.stdout
 
     # Run chisel cuts in parallel
-    print("--- Running chisel cuts for all architectures...")
-    with ThreadPoolExecutor(max_workers=len(arches_to_process)) as executor:
+    logging.info(
+        "Cutting %d slices on %d architectures", len(slices_to_cut), len(args.arch)
+    )
+    executor = ThreadPoolExecutor(max_workers=len(args.arch))
+    try:
         futures = [
             executor.submit(run_chisel, arch, data["rootfs_dir"], slices_to_cut)
             for arch, data in arch_data.items()
         ]
-        chisel_results = {}
+        chisel_results: dict[str, set[str]] = {}
         for future in futures:
-            arch, packages, code, stdout = future.result()
-            chisel_results[arch] = (packages, code, stdout)
+            arch, cut_packages, code, stdout = future.result()
+            if code != 0:
+                logging.error(f"Error running chisel for {arch}, skipping...")
+                logging.error(stdout)
+                continue
+            chisel_results[arch] = cut_packages
+    except KeyboardInterrupt:
+        executor.shutdown(wait=False, cancel_futures=True)
+        raise
+    else:
+        executor.shutdown()
 
-    # Copy debs to deb_dirs
-    for arch in arches_to_process:
+    for arch in args.arch:
         data = arch_data[arch]
         deb_file_src = deb_files.get(arch)
         if deb_file_src is None:
             continue
-        shutil.copy(str(deb_file_src), str(deb_file_src.name))
-        data["deb_file"] = deb_file_src.name
+        data["deb_file"] = deb_file_src
 
-    def run_extract(arch, deb_file, deb_extract_dir):
-        print(f"--- Extracting .deb for {arch}...")
+    def run_extract(
+        arch: Arch, deb_file: Path, deb_extract_dir: Path
+    ) -> tuple[Arch, int]:
         result = subprocess.run(["dpkg-deb", "-x", str(deb_file), str(deb_extract_dir)])
-        return arch, result
+        return arch, result.returncode
 
     # Run extractions in parallel
-    print("--- Extracting .debs for all architectures...")
-    with ThreadPoolExecutor(max_workers=len(arches_to_process)) as executor:
+    logging.info("Extracting debs for %d architectures", len(args.arch))
+    executor = ThreadPoolExecutor(max_workers=len(args.arch))
+    try:
         futures = [
             executor.submit(
                 run_extract, arch, data["deb_file"], data["deb_extract_dir"]
@@ -401,37 +422,37 @@ def main(args: argparse.Namespace) -> None:
             for arch, data in arch_data.items()
             if "deb_file" in data
         ]
-        extract_results = {}
+        extract_results: dict[Arch, int] = {}
         for future in futures:
             arch, result = future.result()
+            if result != 0:
+                logging.error("Failed to extract deb for %s", arch)
             extract_results[arch] = result
+    except KeyboardInterrupt:
+        executor.shutdown(wait=False, cancel_futures=True)
+        raise
+    else:
+        executor.shutdown()
 
     # Process each architecture
-    for arch in arches_to_process:
-        print(f"=== Processing architecture: {arch} ===")
+    for arch in args.arch:
         data = arch_data[arch]
         archdir = data["archdir"]
         rootfs_dir = data["rootfs_dir"]
         deb_extract_dir = data["deb_extract_dir"]
 
-        packages, code, stdout = chisel_results[arch]
-        if code != 0:
-            print(f"Error running chisel for {arch}, skipping...", file=sys.stderr)
-            print(stdout, file=sys.stderr)
+        cut_packages = chisel_results.get(arch, set())
+        if not cut_packages:
+            logging.warning("No packages cut")
             continue
-
-        # Parse extracted packages from output
-        if packages:
-            print(", ".join(sorted(packages)))
 
         # Check extraction
         extract_result = extract_results.get(arch)
-        if extract_result is None or extract_result.returncode != 0:
-            print(f"Error extracting deb for {arch}, skipping...", file=sys.stderr)
+        if extract_result is None:
+            logging.error("Failed to extract deb for %s", arch)
             continue
 
         # Compare files
-        print("--- Comparing files...")
         deb_files_list = get_files(deb_extract_dir)
         rootfs_files_list = get_files(rootfs_dir)
 
@@ -453,7 +474,7 @@ def main(args: argparse.Namespace) -> None:
         uncovered = {
             f
             for f in all_uncovered
-            if not any(f.startswith(ignore) for ignore in ignore_paths)
+            if not any(f.startswith(ignore) for ignore in args.ignore)
         }
 
         ignored = all_uncovered - uncovered
@@ -463,7 +484,7 @@ def main(args: argparse.Namespace) -> None:
         total = len(deb_files_list)
         effective_total = total - ignored_count
         percent = (100 * covered_count // effective_total) if effective_total else 0
-        
+
         # Save covered and uncovered
         with open(archdir / "covered.txt", "w") as f:
             for file in sorted(covered):
@@ -475,10 +496,15 @@ def main(args: argparse.Namespace) -> None:
             for file in sorted(ignored):
                 f.write(file + "\n")
 
-        print(
-            f"===> Coverage for {arch}: {covered_count} / {effective_total} files ({percent}%) [ignored: {ignored_count}]"
+        logging.info(
+            "Coverage for %s: %d / %d files (%d%%) [ignored: %d]",
+            arch,
+            covered_count,
+            effective_total,
+            percent,
+            ignored_count,
         )
-        print(f"===> Uncovered files for {arch}:")
+        logging.info("Uncovered files for %s:", arch)
         for file in sorted(uncovered):
             print(file)
         print()
@@ -488,6 +514,27 @@ def main(args: argparse.Namespace) -> None:
         shutil.rmtree(workdir, ignore_errors=True)
 
 
+COLORS = {
+    "green": "\033[32m",
+    "red": "\033[31m",
+    "yellow": "\033[33m",
+    "reset": "\033[0m",
+}
+
 if __name__ == "__main__":
+    # logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s: %(message)s",
+        handlers=[logging.StreamHandler(sys.stderr)],
+    )
+    logging.addLevelName(logging.INFO, f"{COLORS['green']}INFO{COLORS['reset']}")
+    logging.addLevelName(logging.WARNING, f"{COLORS['yellow']}WARNING{COLORS['reset']}")
+    logging.addLevelName(logging.ERROR, f"{COLORS['red']}ERROR{COLORS['reset']}")
+
     args = parse_args()
-    main(args)
+    try:
+        main(args)
+    except KeyboardInterrupt:
+        print("\nInterrupted.", file=sys.stderr)
+        os._exit(130)
