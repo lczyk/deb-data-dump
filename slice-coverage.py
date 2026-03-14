@@ -2,9 +2,9 @@
 
 import argparse
 import subprocess
-import os
 import sys
 import shutil
+import re
 from pathlib import Path
 
 ARCHES = ["amd64", "i386", "arm64", "riscv64", "armhf", "ppc64el", "s390x"]
@@ -29,15 +29,11 @@ def get_slices_from_sdf(package):
     return [s for s in slices if s]
 
 def get_files(directory):
-    result = subprocess.run(["find", ".", "-type", "f", "-o", "-type", "l"], capture_output=True, text=True, cwd=str(directory))
-    if result.returncode != 0:
-        print(f"Error finding files in {directory}", file=sys.stderr)
-        sys.exit(1)
-    files = result.stdout.strip().split('\n')
-    files = [f for f in files if f]
+    files = []
+    for path in Path(directory).rglob("*"):
+        if path.is_file() or path.is_symlink():
+            files.append("/" + str(path.relative_to(directory)))
     files.sort()
-    # remove the leading '.' from file paths
-    files = [f[1:] if f.startswith('./') else f for f in files]
     return files
 
 def download_deb(deb_dir, package, arch, suite, original_cwd):
@@ -90,7 +86,7 @@ def download_deb(deb_dir, package, arch, suite, original_cwd):
         sys.exit(1)
 
 
-def main():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Check slice coverage for a Debian package across architectures."
     )
@@ -108,8 +104,18 @@ def main():
         help="Paths to ignore in uncovered files (e.g., ./usr/lib/)",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+def main(args: argparse.Namespace) -> None:
+    chisel_version = subprocess.run(
+        ["chisel", "--version"], capture_output=True, text=True
+    )
+    if chisel_version.returncode != 0:
+        print("Error: chisel is not installed or not in PATH.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Using chisel version: {chisel_version.stdout.strip()}")
     package = args.package
     slices = args.slices
 
@@ -174,13 +180,23 @@ def main():
         deb_extract_dir.mkdir(parents=True, exist_ok=True)
         
         # Download the rootfs using chisel
-        print("--- Running chisel...")
+        print("--- Running chisel cut...")
         cmd = ["chisel", "cut", "--arch", arch, "--release", "./", "--root", str(rootfs_dir), "--ignore=unmaintained", "--ignore=unstable"] + slices_to_cut
-        result = subprocess.run(cmd)
+        result = subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
         if result.returncode != 0:
             print(f"Error running chisel for {arch}, skipping...", file=sys.stderr)
+            print(result.stdout, file=sys.stderr)
             continue
-        
+
+        # Parse extracted packages from output
+        extracted_packages = re.findall(
+            r'Extracting files from package "([^"]+)"', result.stdout
+        )
+        if extracted_packages:
+            print(", ".join(sorted(set(extracted_packages))))
+
         # Download the deb
         print(f"--- Downloading .deb for {package}:{arch}...")
         download_deb(deb_dir, package, arch, suite, original_cwd)
@@ -252,4 +268,5 @@ def main():
         print()
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(args)
