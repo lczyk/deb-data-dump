@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 ARCHES = ["amd64", "i386", "arm64", "riscv64", "armhf", "ppc64el", "s390x"]
+# ARCHES = ["arm64", "riscv64", "armhf", "ppc64el", "s390x"]
 
 def get_suite():
     result = subprocess.run(["yq", ".archives.ubuntu.suites[0]", "chisel.yaml"], capture_output=True, text=True)
@@ -40,8 +41,6 @@ def get_files(directory):
 def download_deb(deb_dir, package, arch, suite, original_cwd):
     # Adjust arch for ppc64el
     download_arch = arch
-    if arch == "ppc64el":
-        download_arch = "ppc64le"
 
     download_dir = original_cwd / f"deb_download_{arch}"
     download_dir.mkdir(parents=True, exist_ok=True)
@@ -56,17 +55,42 @@ def download_deb(deb_dir, package, arch, suite, original_cwd):
         f"{original_cwd}:/work",
         "-w",
         work_path,
-        f"ubuntu:{suite}",
     ]
 
-    if arch in ["i386", "amd64"]:
-        platform = "linux/amd64"
-        bash_cmd = f"dpkg --add-architecture i386 && apt update && apt download {package}:{download_arch}"
-    else:
-        platform = f"linux/{download_arch}"
-        bash_cmd = f"apt update && apt download {package}"
+    platform = "linux/amd64"
+    sed_part = ""
+    if download_arch not in ["amd64", "i386"]:
+        ports_main_content = f"""
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports/
+Suites: {suite} {suite}-updates {suite}-backports
+Components: main universe restricted multiverse
+Architectures: {download_arch}
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+"""
+        ports_security_content = f"""
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports/
+Suites: {suite}-security
+Components: main universe restricted multiverse
+Architectures: {download_arch}
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+"""
+        sed_part = [
+            "sed -i '/^Types: deb$/a Architectures: amd64' /etc/apt/sources.list.d/ubuntu.sources",
+            f"echo '{ports_main_content}' >> /etc/apt/sources.list.d/ubuntu.sources",
+            f"echo '{ports_security_content}' >> /etc/apt/sources.list.d/ubuntu.sources",
+        ]
+    bash_parts = [
+        *sed_part,
+        f"dpkg --add-architecture {download_arch}",
+        "apt update",
+        f"apt download {package}:{download_arch} -o=dir::cache={work_path}",
+    ]
+    bash_cmd = " && ".join(bash_parts)
 
     cmd.extend(["--platform", platform])
+    cmd.append(f"ubuntu:{suite}")
     cmd.extend(["bash", "-c", bash_cmd])
 
     try:
