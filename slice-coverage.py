@@ -1,25 +1,36 @@
 #!/usr/bin/env python3
 
 import argparse
+import gzip
+import io
 import subprocess
 import sys
 import shutil
 import re
 import tempfile
+import urllib.request
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 ARCHES = ["amd64", "i386", "arm64", "riscv64", "armhf", "ppc64el", "s390x"]
 
-def get_suite():
-    result = subprocess.run(["yq", ".archives.ubuntu.suites[0]", "chisel.yaml"], capture_output=True, text=True)
+def get_suite(chisel_release_path: Path):
+    chisel_yaml = chisel_release_path / "chisel.yaml"
+    result = subprocess.run(
+        ["yq", ".archives.ubuntu.suites[0]", str(chisel_yaml)],
+        capture_output=True,
+        text=True,
+    )
     if result.returncode != 0:
-        print("Error getting suite from chisel.yaml", file=sys.stderr)
+        print(
+            f"Error getting suite from {chisel_yaml}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     return result.stdout.strip()
 
-def get_slices_from_sdf(package):
-    sdf_file = Path("slices") / f"{package}.yaml"
+def get_slices_from_sdf(package: str, chisel_release_path: Path):
+    sdf_file = chisel_release_path / "slices" / f"{package}.yaml"
     if not sdf_file.exists():
         print(f"Error: SDF file '{sdf_file}' not found.", file=sys.stderr)
         sys.exit(1)
@@ -38,106 +49,125 @@ def get_files(directory):
     files.sort()
     return files
 
-def download_all_debs(deb_temp_dir, package, arches, suite, original_cwd):
-    download_dir = original_cwd / "deb_download_all"
-    download_dir.mkdir(parents=True, exist_ok=True)
+def _arch_base_url(arch: str) -> str:
+    """Return the Ubuntu mirror base URL for the given architecture."""
+    if arch in ("amd64", "i386"):
+        return "http://archive.ubuntu.com/ubuntu"
+    return "http://ports.ubuntu.com/ubuntu-ports"
 
-    work_path = "/work/deb_download_all"
 
-    cmd = [
-        "docker",
-        "run",
-        "--rm",
-        "-v",
-        f"{original_cwd}:/work",
-        "-w",
-        work_path,
-    ]
-
-    platform = "linux/amd64"
-
-    # Add all architectures except amd64 (default)
-    add_arch_cmds = [
-        f"dpkg --add-architecture {arch}" for arch in arches if arch != "amd64"
-    ]
-
-    # Add all arches to ubuntu.sources
-    sed_part: list[str] = []
-
-    # For ports, if any non-amd64/i386 arches
-    non_amd64_arches = [a for a in arches if a not in ["amd64", "i386"]]
-    if non_amd64_arches:
-        ports_arches = " ".join(non_amd64_arches)
-        ports_main_content = f"""
-Types: deb
-URIs: http://ports.ubuntu.com/ubuntu-ports/
-Suites: {suite} {suite}-updates {suite}-backports
-Components: main universe restricted multiverse
-Architectures: {ports_arches}
-Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-"""
-        ports_security_content = f"""
-Types: deb
-URIs: http://ports.ubuntu.com/ubuntu-ports/
-Suites: {suite}-security
-Components: main universe restricted multiverse
-Architectures: {ports_arches}
-Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-"""
-        sed_part = [
-            "sed -i '/^Types: deb$/a Architectures: amd64 i386' /etc/apt/sources.list.d/ubuntu.sources",
-            f"echo '{ports_main_content}' >> /etc/apt/sources.list.d/ubuntu.sources",
-            f"echo '{ports_security_content}' >> /etc/apt/sources.list.d/ubuntu.sources",
-        ]
-
-    # apt update
-    bash_parts = (
-        add_arch_cmds
-        + sed_part
-        + [
-            "apt update",
-        ]
-    )
-
-    # Download each package for each arch
-    download_cmds = [
-        f"apt download {package}:{arch} -o=dir::cache={work_path}" for arch in arches
-    ]
-    bash_parts.extend(download_cmds)
-
-    bash_cmd = " && ".join(bash_parts)
-
-    cmd.extend(["--platform", platform])
-    cmd.append(f"ubuntu:{suite}")
-    cmd.extend(["bash", "-c", bash_cmd])
-
+def _fetch_url(url: str, timeout: int = 30) -> bytes | None:
+    """Fetch a URL and return its content as bytes, or None on failure."""
     try:
-        result = subprocess.run(cmd)
-        if result.returncode != 0:
-            print(f"Error downloading debs: {result.stderr}", file=sys.stderr)
-            return {}
+        with urllib.request.urlopen(url, timeout=timeout) as resp:
+            return resp.read()
+    except Exception as e:
+        print(f"Warning: could not fetch {url}: {e}", file=sys.stderr)
+        return None
 
-        # Move debs to deb_temp_dir, keeping original names
-        deb_files_list = list(download_dir.glob("*.deb"))
-        deb_dict = {}
-        for deb_file in deb_files_list:
-            name = deb_file.name
-            for arch in arches:
-                if (
-                    f"_{arch}.deb" in name or f":{arch}_" in name
-                ):  # assuming format like package_version:arch.deb or package_version_arch.deb
-                    target = deb_temp_dir / name  # keep original name
-                    shutil.move(str(deb_file), str(target))
-                    deb_dict[arch] = target
+
+def _parse_packages_gz(data: bytes, package: str) -> dict[str, str] | None:
+    """Parse a Packages.gz blob and return the stanza for the given package name."""
+    try:
+        with gzip.GzipFile(fileobj=io.BytesIO(data)) as fh:
+            text = fh.read().decode("utf-8", errors="replace")
+    except Exception:
+        text = data.decode("utf-8", errors="replace")
+
+    current: dict[str, str] = {}
+    last_key: str | None = None
+    for line in text.splitlines():
+        if not line:
+            if current.get("Package") == package:
+                return current
+            current = {}
+            last_key = None
+        elif line[0] == " " and last_key is not None:
+            current[last_key] = current[last_key] + "\n" + line[1:]
+        elif ":" in line:
+            idx = line.index(":")
+            key = line[:idx]
+            value = line[idx + 2 :] if len(line) > idx + 1 else ""
+            current[key] = value
+            last_key = key
+    if current.get("Package") == package:
+        return current
+    return None
+
+
+def download_all_debs(
+    workdir: Path,
+    package: str,
+    arches: list[str],
+    suite: str,
+) -> dict[str, Path]:
+    """Download .deb files directly from Ubuntu mirrors without Docker."""
+    suites_to_try = [f"{suite}-updates", f"{suite}-security", suite]
+    components = ["main", "universe", "restricted", "multiverse"]
+
+    deb_dict: dict[str, Path] = {}
+
+    def download_for_arch(arch: str) -> tuple[str, Path | None]:
+        base_url = _arch_base_url(arch)
+        entry: dict[str, str] | None = None
+
+        for try_suite in suites_to_try:
+            if entry:
+                break
+            for component in components:
+                url = f"{base_url}/dists/{try_suite}/{component}/binary-{arch}/Packages.gz"
+                data = _fetch_url(url)
+                if data is None:
+                    continue
+                entry = _parse_packages_gz(data, package)
+                if entry:
                     break
-        return deb_dict
-    finally:
-        shutil.rmtree(download_dir, ignore_errors=True)
+
+        if not entry:
+            print(
+                f"Warning: package '{package}' not found for arch '{arch}' in any suite/component.",
+                file=sys.stderr,
+            )
+            return arch, None
+
+        filename = entry.get("Filename")
+        if not filename:
+            print(
+                f"Warning: no Filename field for '{package}' on arch '{arch}'.",
+                file=sys.stderr,
+            )
+            return arch, None
+
+        deb_url = f"{base_url}/{filename}"
+        (workdir / arch).mkdir(parents=True, exist_ok=True)
+        deb_dest = workdir / arch / Path(filename).name
+        print(f"  [{arch}] Downloading {deb_url} ...")
+        try:
+            urllib.request.urlretrieve(deb_url, str(deb_dest))
+            print(f"  [{arch}] Saved to {deb_dest.name}")
+            return arch, deb_dest
+        except Exception as e:
+            print(f"Warning: failed to download {deb_url}: {e}", file=sys.stderr)
+            return arch, None
+
+    max_workers = max(1, min(8, len(arches)))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(download_for_arch, arch) for arch in arches]
+        for future in as_completed(futures):
+            arch, deb_path = future.result()
+            if deb_path is not None:
+                deb_dict[arch] = deb_path
+
+    return deb_dict
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Check slice coverage for a Debian package across architectures."
+    )
+    parser.add_argument(
+        "chisel_releases",
+        help="Path to the chisel-releases folder (contains chisel.yaml)",
     )
     parser.add_argument(
         "package", help="Package name to check coverage against (e.g., libc6)"
@@ -154,6 +184,16 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help="Paths to ignore in uncovered files (e.g., ./usr/lib/)",
     )
+    parser.add_argument(
+        "--workdir",
+        help="Optional working directory. If omitted, a temporary directory is used.",
+    )
+    parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="When used with --workdir, remove the existing directory before running.",
+    )
 
     return parser.parse_args()
 
@@ -167,9 +207,21 @@ def main(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     print(f"Using chisel version: {chisel_version.stdout.strip()}")
-    package = args.package
+    chisel_release_path = Path(args.chisel_releases).resolve()
+    if not chisel_release_path.is_dir():
+        print(
+            f"Error: chisel-releases path '{chisel_release_path}' is not a directory.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if not (chisel_release_path / "chisel.yaml").exists():
+        print(
+            f"Error: '{chisel_release_path / 'chisel.yaml'}' not found.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
-    original_cwd = Path.cwd()
+    package = args.package
 
     # Process ignore paths: split on commas and flatten
     ignore_paths = [
@@ -179,25 +231,51 @@ def main(args: argparse.Namespace) -> None:
         if path.strip()
     ]
 
-    temp_dir = tempfile.mkdtemp()
-    workdir = Path(temp_dir)
-    outdir = Path.cwd() / "out"
-    workdir.mkdir(parents=True, exist_ok=True)
-    outdir.mkdir(parents=True, exist_ok=True)
+    if args.force and not args.workdir:
+        print(
+            "Error: --force can only be used together with --workdir.", file=sys.stderr
+        )
+        sys.exit(1)
 
-    suite = get_suite()
+    if args.workdir:
+        workdir = Path(args.workdir).resolve()
+        cleanup_workdir = False
+
+        if workdir.exists() and not workdir.is_dir():
+            print(
+                f"Error: workdir path '{workdir}' exists and is not a directory.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        if workdir.exists() and args.force:
+            shutil.rmtree(workdir, ignore_errors=True)
+        elif workdir.exists() and any(workdir.iterdir()):
+            print(
+                f"Error: workdir '{workdir}' already exists and is not empty. "
+                "Use --force to overwrite it.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+    else:
+        workdir = Path(tempfile.mkdtemp())
+        cleanup_workdir = True
+    workdir.mkdir(parents=True, exist_ok=True)
+
+    suite = get_suite(chisel_release_path)
+    print(f"Suite: {suite}")
 
     # Process slice: split on commas and flatten
     if not args.slice:
         print("--- No slices specified, parsing sdf file...")
-        slices = get_slices_from_sdf(package)
+        slices = get_slices_from_sdf(package, chisel_release_path)
     else:
         slice_list = [
             s.strip() for item in args.slice for s in item.split(",") if s.strip()
         ]
         if "all" in slice_list:
             print("Slices set to 'all', parsing sdf file...")
-            slices = get_slices_from_sdf(package)
+            slices = get_slices_from_sdf(package, chisel_release_path)
         else:
             slices = slice_list
 
@@ -244,32 +322,24 @@ def main(args: argparse.Namespace) -> None:
     # Download all debs
     print(f"--- Downloading .debs for {len(arches_to_process)} architectures...")
     print(f"Architectures: {', '.join(arches_to_process)}")
-    deb_temp_dir = workdir / "debs"
-    deb_temp_dir.mkdir(parents=True, exist_ok=True)
-    deb_files = download_all_debs(
-        deb_temp_dir, package, arches_to_process, suite, original_cwd
-    )
+    deb_files = download_all_debs(workdir, package, arches_to_process, suite)
 
     # Prepare directories
     arch_data = {}
     for arch in arches_to_process:
         archdir = workdir / arch
         rootfs_dir = archdir / "rootfs"
-        deb_dir = archdir / "deb"
         deb_extract_dir = archdir / "deb_extract"
 
         # Clean old data
         shutil.rmtree(rootfs_dir, ignore_errors=True)
-        shutil.rmtree(deb_dir, ignore_errors=True)
         shutil.rmtree(deb_extract_dir, ignore_errors=True)
         rootfs_dir.mkdir(parents=True, exist_ok=True)
-        deb_dir.mkdir(parents=True, exist_ok=True)
         deb_extract_dir.mkdir(parents=True, exist_ok=True)
 
         arch_data[arch] = {
             "archdir": archdir,
             "rootfs_dir": rootfs_dir,
-            "deb_dir": deb_dir,
             "deb_extract_dir": deb_extract_dir,
         }
 
@@ -281,7 +351,7 @@ def main(args: argparse.Namespace) -> None:
             "--arch",
             arch,
             "--release",
-            "./",
+            str(chisel_release_path),
             "--root",
             str(rootfs_dir),
             "--ignore=unmaintained",
@@ -310,12 +380,11 @@ def main(args: argparse.Namespace) -> None:
     # Copy debs to deb_dirs
     for arch in arches_to_process:
         data = arch_data[arch]
-        deb_dir = data["deb_dir"]
         deb_file_src = deb_files.get(arch)
         if deb_file_src is None:
             continue
-        shutil.copy(str(deb_file_src), str(deb_dir / deb_file_src.name))
-        data["deb_file"] = deb_dir / deb_file_src.name
+        shutil.copy(str(deb_file_src), str(deb_file_src.name))
+        data["deb_file"] = deb_file_src.name
 
     def run_extract(arch, deb_file, deb_extract_dir):
         print(f"--- Extracting .deb for {arch}...")
@@ -343,7 +412,6 @@ def main(args: argparse.Namespace) -> None:
         data = arch_data[arch]
         archdir = data["archdir"]
         rootfs_dir = data["rootfs_dir"]
-        deb_dir = data["deb_dir"]
         deb_extract_dir = data["deb_extract_dir"]
 
         packages, code, stdout = chisel_results[arch]
@@ -415,8 +483,9 @@ def main(args: argparse.Namespace) -> None:
             print(file)
         print()
 
-    # Clean up temp directory
-    shutil.rmtree(temp_dir, ignore_errors=True)
+    # Clean up only when we created a temporary workdir.
+    if cleanup_workdir:
+        shutil.rmtree(workdir, ignore_errors=True)
 
 
 if __name__ == "__main__":
