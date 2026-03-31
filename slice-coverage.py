@@ -190,13 +190,13 @@ def parse_args() -> argparse.Namespace:
         "--arch",
         action="append",
         default=[],
-        help="Architecture to process",
+        help="Architecture to process (e.g., amd64). Can be specified multiple times or as a comma-separated list. Default is all arches.",
     )
     parser.add_argument(
         "--ignore",
         action="append",
         default=[],
-        help="Paths to ignore in uncovered files (e.g., ./usr/lib/)",
+        help="Paths to ignore in uncovered files (e.g., ./usr/lib/). Can be specified multiple times or as a comma-separated list.",
     )
     parser.add_argument(
         "--workdir",
